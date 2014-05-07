@@ -254,6 +254,26 @@ def findQueryTF(query):
             tf[word] = 1
     return tf
 
+def findQueryTFBigram(query):
+    tf = {}
+    vocab = query
+    #Converting to lowercase
+    vocab = vocab.lower()
+    #Removing punctuation
+    vocab = vocab.translate(string.maketrans("",""), string.punctuation)
+    #Tokenize into word list
+    vocabList = vocab.split()
+    vocabListN = len(vocabList)
+    vocabListN = vocabListN - 1
+    for wordNum in range(0,vocabListN):
+        word = vocabList[wordNum] + " " + vocabList[wordNum + 1]
+        #Adding to dictionary
+        if word in tf:
+            tf[word] = tf[word] + 1
+        else:
+            tf[word] = 1
+    return tf
+
 def findTF(docs):
     tf = {}
     docId = 1
@@ -307,6 +327,78 @@ def findTF(docs):
         
         for word in vocabList:
            #Adding to dictionary
+            if word in tf:
+                if docId in tf[word]:
+                    tf[word][docId] = tf[word][docId] + 1 * wordWeight
+                else:
+                    tf[word][docId] = 1
+            else:
+                tf[word] = {}
+                tf[word][docId] = 1
+
+
+        docId = docId + 1 
+
+    return tf, titleDocTF
+def findTFBigram(docs):
+    tf = {}
+    docId = 1
+    titleDocTF = {}
+    replace_punctuation = string.maketrans(string.punctuation, ' '*len(string.punctuation))
+    wordWeight = 1
+    for doc in docs:
+        url = doc['Url']
+        #if the url has the word from quality documents list, then improve the weight by a factor of 0.2
+        for domain in qualityDocs:
+            if re.match(r'.*'+re.escape(domain)+'.*', url):
+                wordWeight = 1 + qualityFactor
+                break
+                
+            else:
+                wordWeight = 1
+            
+        vocab = doc['Description']+' '+doc['Title']
+        title = doc['Title']
+        #Converting to lowercase
+        title = title.lower()
+        #Removing punctuation
+        title = title.translate(replace_punctuation)
+        
+        
+        titleList = title.split()
+        titleListN = len(titleList)
+        titleListN = titleListN - 1
+        #print titleListN
+        #print len(titleList)
+        repeat = {}
+        for wordNum in range(0,titleListN ):
+            word = titleList[wordNum] + " " + titleList[wordNum + 1] 
+            if word in titleDocTF and word not in repeat:
+                titleDocTF[word] = titleDocTF[word] + 1
+                repeat[word] = 1
+                
+            elif word not in repeat:
+                titleDocTF[word] = 1
+                repeat[word] = 1
+        
+
+        #Converting to lowercase
+        vocab = vocab.lower()
+
+        #Removing punctuation
+        vocab = vocab.translate(replace_punctuation)
+
+        #Tokenize into word list
+        vocabList = vocab.split()
+
+        #Remove stop words
+        vocabList= [w for w in vocabList if not w in stopwords]
+        vocabListN = len ( vocabList)
+        vocabListN = vocabListN - 1
+        
+        for wordNum in range(0,vocabListN):
+           #Adding to dictionary
+            word = vocabList[wordNum] + " " + vocabList[wordNum + 1]
             if word in tf:
                 if docId in tf[word]:
                     tf[word][docId] = tf[word][docId] + 1 * wordWeight
