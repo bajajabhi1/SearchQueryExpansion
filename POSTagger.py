@@ -5,9 +5,7 @@ Created on May 8, 2014
 '''
 from collections import defaultdict
 
-
 import nltk
-
 
 myDict = defaultdict(str)
 
@@ -26,4 +24,3 @@ def POSTag(docs):
             myDict[key] += val
         
     return myDict
-
