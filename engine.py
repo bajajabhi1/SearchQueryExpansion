@@ -11,7 +11,7 @@ stopwords = ['a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also', '
              'neither', 'no', 'nor', 'not', 'of', 'off', 'often', 'on', 'only', 'or', 'other', 'our', 'own', 'rather', 'said', 'say', 'says', 'she',
              'should', 'since', 'so', 'some', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'tis', 'to', 'too',
              'twas', 'us', 'wants', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'would', 'yet',
-             'you', 'your']
+             'you', 'your', 's', 'february', 'january', '2', '1', '3']
 
 alpha = 1
 beta = 0.75
@@ -20,7 +20,7 @@ titleFactor = 0.2
 qualityFactor = 0.2
 qualityDocs = ['wikipedia.org']
 
-def keyWordEngine(query,targetPrec,relevant,nonrel):
+def keyWordEngine(query,relevant,nonrel,bigram,ordering):
      
     query = query.replace('%20',' ')
 
@@ -29,9 +29,14 @@ def keyWordEngine(query,targetPrec,relevant,nonrel):
     N_Nonrel = len(nonrel)
 
     #finding TF
-    tfRel,titleRel = findTF(relevant)
-    tfNonRel,titleNonRel = findTF(nonrel)
-    tfQuery = findQueryTF(query)
+    if bigram == True:
+        tfRel,titleRel = findTFBigram(relevant)
+        tfNonRel,titleNonRel = findTFBigram(nonrel)
+        tfQuery = findQueryTFBigram(query)
+    else:
+        tfRel,titleRel = findTF(relevant)
+        tfNonRel,titleNonRel = findTF(nonrel)
+        tfQuery = findQueryTF(query)
 
     #finding IDF
     idfRel = findIDF(tfRel, N_Rel)
@@ -67,13 +72,19 @@ def keyWordEngine(query,targetPrec,relevant,nonrel):
         finalList.append(second)
 
     
-    #find the best order of the words in the query        
-    print "Determining the best order of terms"
-    finalOrderedList = findPermutations(finalList, relevant)
+    #find the best order of the words in the query
+    if ordering == True:    
+        print "Determining the best order of terms"
+        finalOrderedList = findPermutations(finalList, relevant)
 
     modifiedQuery = []
-    for wordList in finalOrderedList:
-        for word in wordList:
+    if ordering == True:
+        for wordList in finalOrderedList:
+            for word in wordList:
+                if word not in modifiedQuery:
+                    modifiedQuery.append(word)
+    else :
+        for word in finalList:
             if word not in modifiedQuery:
                 modifiedQuery.append(word)
             
@@ -116,7 +127,7 @@ def findPermutations(queryList,docRel):
 
     return bestQueryList
 
-def addPair(index ,QueryList, pair, weight, useless):
+def addPair(index, QueryList, pair, weight, useless):
     if len(QueryList)<=index:
         QueryList.append([])
         QueryList[index].append(pair[0])
@@ -177,19 +188,46 @@ def findWords(RelDoc, NonrelDoc, query):
     sortWeights = heapq.nlargest(10 + len(query),finalWeight,key=finalWeight.get)
 
     #Finding top two words by weigths such that the word is not in query
+    querySet = set()
+    for bigram in query:
+        singleList = bigram.split(" ")
+        for single in singleList:
+            querySet.add(single)
     i = 0
+    found = False
     while i < len(sortWeights):
+        #if ~any(sortWeights[i] in x for x in querySet):
         if sortWeights[i] not in query:
-            first = sortWeights[i]
-            break
+            candPart = sortWeights[i].split(" ")
+            for part in candPart:
+                if part not in querySet:
+                    first = part
+                    finalWeight[first] = finalWeight[sortWeights[i]]                    
+                    found = True
+                    break
+            if found == False:
+                i = i+1 # if word not found
+            else :
+                break
         else:
             i = i+1
 
+    querySet.add(first)
     i = i+1
     while i < len(sortWeights):
+        #if ~any(sortWeights[i] in x for x in query):
         if sortWeights[i] not in query:
-            second = sortWeights[i]
-            break
+            candPart = sortWeights[i].split(" ")
+            for part in candPart:
+                if part not in querySet:
+                    second = part
+                    finalWeight[second] = finalWeight[sortWeights[i]]
+                    found = True
+                    break
+            if found == False:
+                i = i+1 # if word not found
+            else :
+                break
         else:
             i = i+1
     
@@ -340,6 +378,7 @@ def findTF(docs):
         docId = docId + 1 
 
     return tf, titleDocTF
+
 def findTFBigram(docs):
     tf = {}
     docId = 1
