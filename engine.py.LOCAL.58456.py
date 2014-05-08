@@ -3,11 +3,7 @@ import math
 import re
 import itertools
 import heapq
-
-
-
-from nltk.stem.porter import PorterStemmer
-
+from POSTagger import POSTag
 
 stopwords = ['a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also', 'am', 'among', 'an', 'and', 'any', 'are', 'as',
              'at', 'be', 'because', 'been', 'but', 'by', 'can', 'cannot', 'could', 'dear', 'did', 'do', 'does', 'either', 'else',
@@ -27,6 +23,8 @@ qualityDocs = ['wikipedia.org']
 
 
 def keyWordEngine(query,relevant,nonrel,bigram,ordering):
+    POSDict = POSTag(relevant)
+    print "Created POSDict size " + str(len(POSDict))
     query = query.replace('%20',' ')
 
     # finding N for calculating IDF
@@ -193,12 +191,11 @@ def findWords(RelDoc, NonrelDoc, query):
     sortWeights = heapq.nlargest(10 + len(query),finalWeight,key=finalWeight.get)
 
     #Finding top two words by weigths such that the word is not in query
-    stemmer = PorterStemmer()
     querySet = set()
     for bigram in query:
         singleList = bigram.split(" ")
         for single in singleList:
-            querySet.add(stemmer.stem(single))
+            querySet.add(single)
     i = 0
     found = False
     while i < len(sortWeights):
@@ -206,7 +203,7 @@ def findWords(RelDoc, NonrelDoc, query):
         if sortWeights[i] not in query:
             candPart = sortWeights[i].split(" ")
             for part in candPart:
-                if stemmer.stem(part) not in querySet:
+                if part not in querySet:
                     first = part
                     finalWeight[first] = finalWeight[sortWeights[i]]                    
                     found = True
@@ -225,7 +222,7 @@ def findWords(RelDoc, NonrelDoc, query):
         if sortWeights[i] not in query:
             candPart = sortWeights[i].split(" ")
             for part in candPart:
-                if stemmer.stem(part) not in querySet:
+                if part not in querySet:
                     second = part
                     finalWeight[second] = finalWeight[sortWeights[i]]
                     found = True

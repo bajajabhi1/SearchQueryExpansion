@@ -3,11 +3,7 @@ import math
 import re
 import itertools
 import heapq
-
-
-
 from nltk.stem.porter import PorterStemmer
-
 
 stopwords = ['a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also', 'am', 'among', 'an', 'and', 'any', 'are', 'as',
              'at', 'be', 'because', 'been', 'but', 'by', 'can', 'cannot', 'could', 'dear', 'did', 'do', 'does', 'either', 'else',
@@ -25,8 +21,8 @@ titleFactor = 0.2
 qualityFactor = 0.2
 qualityDocs = ['wikipedia.org']
 
-
 def keyWordEngine(query,relevant,nonrel,bigram,ordering):
+     
     query = query.replace('%20',' ')
 
     # finding N for calculating IDF
