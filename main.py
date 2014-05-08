@@ -5,10 +5,10 @@ import sys
 import urllib2
 
 from engine import keyWordEngine
-
+from nltk.stem.porter import PorterStemmer
 
 accountKey = ''
-noOfResults = 20
+noOfResults = 10
 
 def main():
     if len(sys.argv) != 5:
@@ -32,7 +32,7 @@ def main():
     if isFbActive == 'N':
         print 'Auto run'
         queryList = readQueryFile("E:\Watson-Project-Data\SearchQueryExpansion\queriesForBing.txt")
-        outputFile = open("queryExpansionBingAPI_Unigram_NoOrdering.txt",'w')
+        outputFile = open("queryExpansionBingAPI_Top_10_Unigram_NoOrdering.txt",'w')
         for queryDict in queryList:
             processAutoQuery(queryDict, targetPrec, 1, outputFile, False, False) # no of iterations is 1
         
