@@ -28,7 +28,7 @@ qualityFactor = 0.2
 qualityDocs = ['wikipedia.org']
 
 
-def keyWordEngine(query,relevant,nonrel,bigram,ordering,ignorePosList):
+def keyWordEngine(query,relevant,nonrel,bigram,ordering,ignorePosList, maxExpTerms):
     query = query.replace('%20',' ')
 
     # finding N for calculating IDF
@@ -58,25 +58,32 @@ def keyWordEngine(query,relevant,nonrel,bigram,ordering,ignorePosList):
     weightsNonRel = findWeights(tfNonRel, idfNonRel, titleNonRel, N_Nonrel)
 
     #implemented Rochio to find the new query
-    (first,second) = findWords(weightsRel, weightsNonRel, tfQuery)
+    #(first,second) = findWords(weightsRel, weightsNonRel, tfQuery)
+    expandedSet = findWords(weightsRel, weightsNonRel, tfQuery, maxExpTerms)
 
     # if no new words to be added
-    if first =='' and second =='':
-        return ''
+    #if first =='' and second =='':
+    #    return ''
 
     finalList = []
     
-    print 'Augmented by ' + first + ' ' + second
+    print 'Augmented by ' + ' '.join(expandedSet)
 
     #original query modified
     query = query.split()
+    finalList.extend(query)
+    for x in expandedSet:
+        finalList.append(x)
+     
+     
+    '''   
     if second=="":
-        finalList.extend(query)
         finalList.append(first)
     else:
         finalList.extend(query)
         finalList.append(first)
         finalList.append(second)
+     '''
 
     
     #find the best order of the words in the query
@@ -167,14 +174,15 @@ def isNewWord(word, QueryList, useless):
             return False
     return True
 
-def findWords(RelDoc, NonrelDoc, query):
+def findWords(RelDoc, NonrelDoc, query, maxExpTerms):
 
     finalWeight = {}
-    first = ''
-    second = ''
-    finalWeight[first]=0
-    finalWeight[second]=0
-
+    # first = ''
+    # second = ''
+    # finalWeight[first]=0
+    # finalWeight[second]=0
+    wordsAdded = set()
+    
     #finding the final weights based on Rochio algorithm
     for word in RelDoc:
         finalWeight[word] = beta * RelDoc[word]
@@ -202,24 +210,22 @@ def findWords(RelDoc, NonrelDoc, query):
         for single in singleList:
             querySet.add(stemmer.stem(single))
     i = 0
-    found = False
-    while i < len(sortWeights):
+    #found = False
+    addedYet = 0
+    while i < len(sortWeights) and addedYet < maxExpTerms:
         #if ~any(sortWeights[i] in x for x in querySet):
         if sortWeights[i] not in query:
             candPart = sortWeights[i].split(" ")
             for part in candPart:
                 if stemmer.stem(part) not in querySet:
-                    first = part
-                    finalWeight[first] = finalWeight[sortWeights[i]]                    
-                    found = True
-                    break
-            if found == False:
-                i = i+1 # if word not found
-            else :
-                break
-        else:
-            i = i+1
-
+                    #first = part
+                    wordsAdded.add(part)
+                    querySet.add(part)
+                    addedYet += 1
+                    finalWeight[part] = finalWeight[sortWeights[i]]                    
+                    
+        i=i+1    
+    '''       
     querySet.add(first)
     i = i+1
     while i < len(sortWeights):
@@ -238,17 +244,20 @@ def findWords(RelDoc, NonrelDoc, query):
                 break
         else:
             i = i+1
-    
+    '''
     # If top two words have similar weights then take both
     # NOTE - in case first and second are empty then we will return in this check
+    '''
     if checkSimilarWeights(finalWeight[first],finalWeight[second]):
         return first,second
-
+    '''
     # Choosing whether to add one or two new words to the query
     # Taking the avg of top 10 weigths. Take the avg of first term and this avg.
     # Lets call it threshold. if the second term weight is greater than this threshold then take it as well.
+    '''
     count = 0
     total = 0
+    
     for word in sortWeights:
         if finalWeight[word] < 0:
             break
@@ -261,8 +270,9 @@ def findWords(RelDoc, NonrelDoc, query):
         return first, second
     else:
         return first, ""
+    '''
+    return wordsAdded
 
-    
 def findWeights(tfDict, idfDict, titleDict, N):
     weight = {}
     for word in tfDict:
