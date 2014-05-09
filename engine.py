@@ -7,7 +7,7 @@ import heapq
 
 
 from nltk.stem.porter import PorterStemmer
-
+from POSTagger import POSTag
 
 stopwords = ['a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also', 'am', 'among', 'an', 'and', 'any', 'are', 'as',
              'at', 'be', 'because', 'been', 'but', 'by', 'can', 'cannot', 'could', 'dear', 'did', 'do', 'does', 'either', 'else',
@@ -18,6 +18,8 @@ stopwords = ['a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also', '
              'twas', 'us', 'wants', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'would', 'yet',
              'you', 'your', 's', 'february', 'january', '2', '1', '3']
 
+posIgnoreList = ['NP', 'V', 'NUM', 'VD', 'VG', 'VN', 'MOD', 'CD']
+
 alpha = 1
 beta = 0.75
 gamma = -0.15
@@ -26,7 +28,7 @@ qualityFactor = 0.2
 qualityDocs = ['wikipedia.org']
 
 
-def keyWordEngine(query,relevant,nonrel,bigram,ordering):
+def keyWordEngine(query,relevant,nonrel,bigram,ordering,ignorePosList):
     query = query.replace('%20',' ')
 
     # finding N for calculating IDF
@@ -35,12 +37,12 @@ def keyWordEngine(query,relevant,nonrel,bigram,ordering):
 
     #finding TF
     if bigram == True:
-        tfRel,titleRel = findTFBigram(relevant)
-        tfNonRel,titleNonRel = findTFBigram(nonrel)
+        tfRel,titleRel = findTFBigram(relevant,ignorePosList)
+        tfNonRel,titleNonRel = findTFBigram(nonrel,ignorePosList)
         tfQuery = findQueryTFBigram(query)
     else:
-        tfRel,titleRel = findTF(relevant)
-        tfNonRel,titleNonRel = findTF(nonrel)
+        tfRel,titleRel = findTF(relevant,ignorePosList)
+        tfNonRel,titleNonRel = findTF(nonrel,ignorePosList)
         tfQuery = findQueryTF(query)
 
     #finding IDF
@@ -318,7 +320,7 @@ def findQueryTFBigram(query):
             tf[word] = 1
     return tf
 
-def findTF(docs):
+def findTF(docs, ignorePosList):
     tf = {}
     docId = 1
     titleDocTF = {}
@@ -334,7 +336,12 @@ def findTF(docs):
                 
             else:
                 wordWeight = 1
-            
+         
+        if ignorePosList == True:
+            docList = []
+            docList.append(doc)
+            taggedDict = POSTag(docList)
+               
         vocab = doc['Description']+' '+doc['Title']
         title = doc['Title']
         #Converting to lowercase
@@ -354,7 +361,6 @@ def findTF(docs):
                 titleDocTF[word] = 1
                 repeat[word] = 1
         
-
         #Converting to lowercase
         vocab = vocab.lower()
 
@@ -366,8 +372,10 @@ def findTF(docs):
 
         #Remove stop words
         vocabList= [w for w in vocabList if not w in stopwords]
-
-
+                
+        if ignorePosList == True:            
+            # Ignore the Pos Ignore list
+            vocabList= [w for w in vocabList if not taggedDict[w] in posIgnoreList]
         
         for word in vocabList:
            #Adding to dictionary
@@ -385,23 +393,28 @@ def findTF(docs):
 
     return tf, titleDocTF
 
-def findTFBigram(docs):
+def findTFBigram(docs,ignorePosList):
     tf = {}
     docId = 1
     titleDocTF = {}
     replace_punctuation = string.maketrans(string.punctuation, ' '*len(string.punctuation))
     wordWeight = 1
+           
     for doc in docs:
         url = doc['Url']
         #if the url has the word from quality documents list, then improve the weight by a factor of 0.2
         for domain in qualityDocs:
             if re.match(r'.*'+re.escape(domain)+'.*', url):
                 wordWeight = 1 + qualityFactor
-                break
-                
+                break                
             else:
                 wordWeight = 1
             
+        if ignorePosList == True:
+            docList = []
+            docList.append(doc)
+            taggedDict = POSTag(docList)
+    
         vocab = doc['Description']+' '+doc['Title']
         title = doc['Title']
         #Converting to lowercase
@@ -438,6 +451,11 @@ def findTFBigram(docs):
 
         #Remove stop words
         vocabList= [w for w in vocabList if not w in stopwords]
+        
+        if ignorePosList == True:            
+            # Ignore the Pos Ignore list
+            vocabList= [w for w in vocabList if not taggedDict[w] in posIgnoreList]
+            
         vocabListN = len ( vocabList)
         vocabListN = vocabListN - 1
         

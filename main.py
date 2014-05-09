@@ -8,7 +8,7 @@ from engine import keyWordEngine
 from nltk.stem.porter import PorterStemmer
 
 accountKey = ''
-noOfResults = 20
+noOfResults = 10
 
 def main():
     if len(sys.argv) != 5:
@@ -32,13 +32,13 @@ def main():
     if isFbActive == 'N':
         print 'Auto run'
         queryList = readQueryFile("E:\Watson-Project-Data\SearchQueryExpansion\queriesForBing.txt")
-        outputFile = open("queryExpansionBingAPI_Top_20_Unigram_NoOrdering.txt",'w')
+        outputFile = open("queryExpansionBingAPI_Top_10_Bigram_NoOrdering_IgnorePosList.txt",'w')
         for queryDict in queryList:
-            processAutoQuery(queryDict, targetPrec, 1, outputFile, True, False) # no of iterations is 1
+            processAutoQuery(queryDict, targetPrec, 2, outputFile, True, False, True) # no of iterations is 1
         
         outputFile.close()
     else:
-        processQueryWithFB(query, targetPrec)
+        processQueryWithFB(query, targetPrec, True, False, True)
 
 def bing_search(query,targetPrec):
     query = query.replace(" ","%20")
@@ -65,11 +65,12 @@ def bing_search(query,targetPrec):
     return result_list
     
 
-def processAutoQuery(queryDict, targetPrec, iterCount, outputFile, bigram, ordering):
+def processAutoQuery(queryDict, targetPrec, iterCount, outputFile, bigram, ordering, ignorePosList):
     relevant = []
     nonrel = []
+    query = queryDict['query']
     for _ in range(iterCount):
-        result_list = bing_search(queryDict['query'], targetPrec)
+        result_list = bing_search(query, targetPrec)
         #if len(result_list)<5:
         #    print 'There are less than 5 results to this query. So exiting.'
         #    sys.exit()
@@ -94,10 +95,11 @@ def processAutoQuery(queryDict, targetPrec, iterCount, outputFile, bigram, order
             relevant.append(entry)
         
         print "Indexing results ...."
-        expQuery = keyWordEngine(queryDict['query'],relevant,nonrel,bigram,ordering) # updated query used in nest iteration
-        expQuery = expQuery.replace('2011', '').replace('Feb', '').replace('Jan', '').replace('  ', ' ')
-        query = queryDict['query'].replace('2011', '').replace('Feb', '').replace('Jan', '').replace('  ', ' ')
-        print >> outputFile, queryDict['id']+ ','+queryDict['tweetTime']+','+query.strip().replace('  ', ' ')+','+expQuery.strip().replace('  ', ' ')
+        query = keyWordEngine(query,relevant,nonrel,bigram,ordering,ignorePosList) # updated query used in nest iteration
+        
+    expQuery = query.replace('2011', '').replace('Feb', '').replace('Jan', '').replace('  ', ' ')
+    query = queryDict['query'].replace('2011', '').replace('Feb', '').replace('Jan', '').replace('  ', ' ')
+    print >> outputFile, queryDict['id']+ ','+queryDict['tweetTime']+','+query.strip().replace('  ', ' ')+','+expQuery.strip().replace('  ', ' ')
     print "Expanded Query - " + expQuery
 
 
@@ -122,11 +124,11 @@ def readQueryFile(filePathName):
     f.close()
     return queryList
 
-def processQueryWithFB(query, targetPrec):
+def processQueryWithFB(query, targetPrec, bigram, ordering, ignorePosList):
     result_list = bing_search(query, targetPrec)
-    getRelevantFB(query, result_list, targetPrec)
+    getRelevantFB(query, result_list, targetPrec, bigram, ordering, ignorePosList)
 
-def getRelevantFB(query, result_list, targetPrec):
+def getRelevantFB(query, result_list, targetPrec, bigram, ordering, ignorePosList):
     userPrec = 0.0;
     relevant = []
     nonrel = []
@@ -182,7 +184,7 @@ def getRelevantFB(query, result_list, targetPrec):
         sys.exit()
     else:
         print "Indexing results ...."
-        query = keyWordEngine(query,relevant,nonrel,False,True)
+        query = keyWordEngine(query,relevant,nonrel, bigram, ordering, ignorePosList)
         if query == '':
             print "Quitting as query is unchanged"
             sys.exit()
