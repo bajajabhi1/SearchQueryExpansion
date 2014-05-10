@@ -5,7 +5,7 @@ There are various features supported by the system using the parameters below in
 The system provides facility to provide user relevance feedback as well.
 
 Running command is
-python main.py --key \<bing account key\> \n
+python main.py --key \<bing account key\>
    --userFB \<user feedback (Y or N), If Y then query expansion runs till target precision is reached If N then its auto mode\>
    --targetPrec \<Precision to target, used when user feedback is on>
    --f <file containing queries in format "MB051<newline>35124912364457984<newline>Feb 2011 British Government cuts<endOfFile>"\>
