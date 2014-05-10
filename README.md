@@ -19,5 +19,3 @@ python main.py --key <bing account key>
 
 For example,  
 python main.py --key JsV9AIVwzY0l654YiaIXAppMcpvpm7lvkcYdmzJrNcs --userFB N --f "queriesForBing.txt" --Ngram 2 --ordering N --posTagging N --maxWords 2 --iter 1 --iterResults 10
-
-NOTE: In case when query has multiple words then they should be in single quotes.
